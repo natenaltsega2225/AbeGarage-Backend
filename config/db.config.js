@@ -6,8 +6,8 @@ const connection = mysql.createPool({
     user:process.env.DB_USER,
     password:process.env.DB_PASS,
     database:process.env.DB_NAME,
-    jwt:process.env.JWT_SECRET
-    // socketPath: process.env.DB_SOCKET
+    // jwt:process.env.JWT_SECRET
+    socketPath: process.env.DB_SOCKET
 });
 //Check the connection
 connection.getConnection((err) => {
