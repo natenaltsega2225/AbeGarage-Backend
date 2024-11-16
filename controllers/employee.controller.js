@@ -13,7 +13,7 @@ exports.registerEmployee = async (req, res) => {
     employee_role,
   } = req.body;
   console.log(employee_role);
-
+console.log("hello");
   // Type validation: Ensure that fields expected to be strings are strings
   if (
     typeof employee_first_name !== "string" ||
