@@ -25,4 +25,19 @@ router.get(
   employeeController.getAllEmployees
 );
 
+
+// PUT request to update employee details
+router.put(
+  "/api/employee/:id",
+  [authMiddleware.verifyToken, authMiddleware.isAdmin],
+  employeeController.updateEmployee
+);
+// Employee Deletion Route
+router.delete(
+  "/api/admin/employee/:id", // Route to delete an employee
+  authMiddleware.verifyToken, // Ensures the user is authenticated
+  authMiddleware.isAdmin, // Ensures the user has admin privileges
+  employeeController.deleteEmployee // Deletes the employee if checks pass
+);
+
 module.exports = router;
