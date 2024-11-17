@@ -149,3 +149,5 @@ VALUES ('Employee'), ('Manager'), ('Admin');
 
 -- INSERT INTO employee_role (employee_id, company_role_id)
 -- VALUES (1, 3); 
+
+ALTER TABLE employee ADD COLUMN employee_uuid CHAR(36) NOT NULL;

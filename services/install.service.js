@@ -26,7 +26,7 @@ const install = async () => {
       await dbConfig.query(statement);
     }
     await dbConfig.end();
-    return "Database installation successful";
+    return "Database installation successfull";
   } catch (error) {
     console.error("Error installing database:", error);
     return "Database installation failed";
