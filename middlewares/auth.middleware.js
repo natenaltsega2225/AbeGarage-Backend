@@ -1,54 +1,52 @@
-// Import the dotenv package
-require("dotenv").config();
-// Import the jsonwebtoken package
-const jwt = require("jsonwebtoken");
-// A function to verify the token received from the frontend
-// Import the employee service
+// Import necessary packages
+require("dotenv").config(); // To load environment variables
+const jwt = require("jwt-simple"); // Using jwt-simple for token decoding
+const { User } = require("../models"); // Assuming a User model exists to handle user data
 const employeeService = require("../services/employee.service");
+const customerService=require("../services/customer.service") // Employee service to fetch employee details
 
-// A function to verify the token received from the frontend
-const verifyToken = async (req, res, next) => {
-   let token = req.headers["x-access-token"];
-   if (!token) {
-      return res.status(403).send({
-         status: "fail",
-         message: "No token provided!",
-      });
-   }
+// Middleware to verify JWT token
+const verifyToken = (req, res, next) => {
+  // Get token from the 'Authorization' header
+  const token = req.headers["authorization"];
 
-   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-      if (err) {
-         return res.status(401).send({
-            status: "fail",
-            message: "Unauthorized!",
-         });
-      }
-      // console.log("Here is the decoded token");
-      // console.log(decoded);
-      req.employee_email = decoded.employee_email;
-      next();
-   });
+  if (!token) {
+    return res.status(403).json({ message: "No token provided" });
+  }
+
+  try {
+    // Decode the token using the secret key (JWT_SECRET from environment)
+    const decoded = jwt.decode(token, process.env.JWT_SECRET);
+    req.employee_email = decoded.employee_email; // Attach employee email from the token to the request object
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
 };
 
-// A function to check if the user is an admin
-const isAdmin = async (req, res, next) => {
-   // let token = req.headers["x-access-token"];
-   console.log(req.employee_email);
-   const employee_email = req.employee_email;
-   const employee = await employeeService.getEmployeeByEmail(employee_email);
-   if (employee[0].company_role_id === 3) {
-      next();
-   } else {
-      return res.status(403).send({
-         status: "fail",
-         error: "Not an Admin!",
-      });
-   }
+// Middleware to verify if the user has an admin role
+const verifyAdminRole = async (req, res, next) => {
+  try {
+    const employeeEmail = req.employee_email; // Get the employee email from the token
+    const employee = await employeeService.getEmployeeByEmail(employeeEmail); // Fetch employee data
+
+    if (!employee || employee[0].company_role_id !== 3) {
+      // Assuming '3' is the admin role ID
+      return res
+        .status(403)
+        .json({ message: "Access denied, admin role required" });
+    }
+
+    next(); // Proceed if the employee is an admin
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
 };
 
-const authMiddleware = {
-   verifyToken,
-   isAdmin,
+// Export the middlewares
+module.exports = {
+  verifyToken,
+  verifyAdminRole,
 };
-
-module.exports = authMiddleware;
