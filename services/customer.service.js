@@ -7,8 +7,38 @@ const queryDatabase = async (query, params) => {
     const [result] = await conn.query(query, params);
     return result;
   } catch (error) {
-    throw new Error(`Database query failed: ${error.message}`);
+    console.error(`Database query failed: ${error.message}`);
+    throw new Error("Database query failed. Please try again later.");
   }
+};
+
+// Helper function for validating customer data
+const validateCustomerData = (customerData) => {
+  const {
+    customer_email,
+    customer_phone_number,
+    customer_first_name,
+    customer_last_name,
+  } = customerData;
+
+  if (
+    !customer_email ||
+    !customer_phone_number ||
+    !customer_first_name ||
+    !customer_last_name
+  ) {
+    throw new Error(
+      "Missing required fields: email, phone number, first name, and last name are mandatory."
+    );
+  }
+};
+
+// Helper function for generating a unique customer hash
+const generateCustomerHash = (email, phoneNumber) => {
+  return crypto
+    .createHash("sha256")
+    .update(email + phoneNumber)
+    .digest("hex");
 };
 
 // Service function to add a new customer
@@ -21,20 +51,11 @@ const addCustomer = async (customerData) => {
     active_customer_status,
   } = customerData;
 
-  // Basic validation
-  if (
-    !customer_email ||
-    !customer_phone_number ||
-    !customer_first_name ||
-    !customer_last_name
-  ) {
-    throw new Error(
-      "Missing required fields: email, phone number, first name, and last name are mandatory."
-    );
-  }
+  // Step 1: Validate customer data
+  validateCustomerData(customerData);
 
   try {
-    // Step 1: Check if the customer email or phone number already exists
+    // Step 2: Check if the customer email or phone number already exists
     const existingCustomer = await queryDatabase(
       "SELECT * FROM customer_identifier WHERE customer_email = ? OR customer_phone_number = ?",
       [customer_email, customer_phone_number]
@@ -44,13 +65,13 @@ const addCustomer = async (customerData) => {
       throw new Error("Email or Phone number already registered.");
     }
 
-    // Step 2: Generate a unique customer hash
-    const customerHash = crypto
-      .createHash("sha256")
-      .update(customer_email + customer_phone_number)
-      .digest("hex");
+    // Step 3: Generate a unique customer hash
+    const customerHash = generateCustomerHash(
+      customer_email,
+      customer_phone_number
+    );
 
-    // Step 3: Use a transaction to ensure both inserts succeed or fail together
+    // Step 4: Use a transaction to ensure both inserts succeed or fail together
     await conn.beginTransaction(); // Start a transaction
 
     // Insert into customer_identifier table
@@ -77,7 +98,7 @@ const addCustomer = async (customerData) => {
       active_customer_status,
     ]);
 
-    // Check if both inserts were successful
+    // Step 5: Check if both inserts were successful
     if (
       customerInfoResult.affectedRows !== 1 ||
       customerIdentifierResult.affectedRows !== 1
@@ -90,6 +111,7 @@ const addCustomer = async (customerData) => {
 
     // Return success response
     return {
+      success: true,
       message: "Customer created successfully.",
       customerId,
     };
@@ -102,14 +124,21 @@ const addCustomer = async (customerData) => {
   }
 };
 
-// Service to get all customers (unchanged)
-exports.getCustomers = async () => {
+// Service to get all customers
+const getAllCustomers = async () => {
   try {
     const customers = await queryDatabase("SELECT * FROM customers");
-    return customers.rows;
+    if (customers.length === 0) {
+      return { success: false, message: "No customers found." };
+    }
+    return {
+      success: true,
+      customers,
+    };
   } catch (error) {
-    throw new Error("Error fetching customer data");
+    console.error("Error fetching customers:", error.message);
+    throw new Error("Error fetching customer data. Please try again later.");
   }
 };
 
-module.exports = { addCustomer };
+module.exports = { addCustomer, getAllCustomers };

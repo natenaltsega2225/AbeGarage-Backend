@@ -3,23 +3,23 @@ const mysql = require("mysql2/promise");
 const { Sequelize } = require("sequelize");
 const { Pool } = require("pg");
 
-// MySQL connection configuration using mysql2/promise
+// MySQL connection pool setup using mysql2/promise
 const mysqlConnection = mysql.createPool({
   connectionLimit: 10,
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASS || "password",
+  database: process.env.DB_NAME || "mysql2_db",
+  port: process.env.DB_PORT || 3306,
 });
 
-// PostgreSQL connection configuration using Sequelize
+// PostgreSQL connection configuration using Sequelize (ORM)
 const sequelize = new Sequelize(
   process.env.POSTGRES_CONNECTION_STRING ||
     "postgres://user:password@localhost:5432/db_name"
 );
 
-// PostgreSQL connection pool setup for direct queries
+// PostgreSQL connection pool setup for direct queries (pg)
 const pgPool = new Pool({
   user: process.env.PG_USER || "your-db-user",
   host: process.env.PG_HOST || "localhost",
@@ -43,9 +43,9 @@ async function testMysqlConnection() {
 async function testPostgresConnection() {
   try {
     await sequelize.authenticate();
-    console.log("PostgreSQL Database connected (Sequelize)");
+    console.log("PostgreSQL Database connected (Sequelize ORM)");
   } catch (err) {
-    console.error("PostgreSQL connection error (Sequelize): ", err.message);
+    console.error("PostgreSQL connection error (Sequelize ORM): ", err.message);
   }
 }
 
@@ -62,18 +62,23 @@ async function testPgPoolConnection() {
 
 // Method to execute queries on PostgreSQL using the pool
 exports.query = async (text, params) => {
-  const res = await pgPool.query(text, params);
-  return res;
+  try {
+    const res = await pgPool.query(text, params);
+    return res;
+  } catch (err) {
+    console.error("PostgreSQL query execution error: ", err.message);
+    throw err; // Rethrow error after logging it
+  }
 };
 
-// Function to test both MySQL and PostgreSQL connections
+// Function to test connections to both MySQL and PostgreSQL
 async function testConnections() {
   await testMysqlConnection();
   await testPostgresConnection();
   await testPgPoolConnection();
 }
 
-// Export both connections and utility functions
+// Export all necessary modules and methods
 module.exports = {
   mysqlConnection,
   sequelize,
