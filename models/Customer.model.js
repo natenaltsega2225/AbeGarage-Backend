@@ -1,28 +1,50 @@
-const { Sequelize, DataTypes } = require("sequelize");
+const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db.config"); // Correct import of Sequelize instance
-const sequelize = new Sequelize("database", "username", "password", {
-  host: "localhost",
-  dialect: "mysql2", // or 'postgres', 'sqlite', etc.
-});
-// Define the Customer model
+
+// Define the Customer model with additional validation
 const Customer = sequelize.define("Customer", {
   customer_email: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
+    unique: {
+      msg: "This email is already associated with another account.",
+    },
+    validate: {
+      isEmail: {
+        msg: "Please provide a valid email address.",
+      },
+    },
   },
   customer_phone_number: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
+    unique: {
+      msg: "This phone number is already in use.",
+    },
+    validate: {
+      len: {
+        args: [10, 15],
+        msg: "Phone number should be between 10 to 15 characters.",
+      },
+    },
   },
   customer_first_name: {
     type: DataTypes.STRING,
     allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: "First name is required.",
+      },
+    },
   },
   customer_last_name: {
     type: DataTypes.STRING,
     allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: "Last name is required.",
+      },
+    },
   },
   active_customer_status: {
     type: DataTypes.BOOLEAN,
@@ -35,7 +57,8 @@ const CustomerService = {
   // Fetch all customers
   findAll: async () => {
     try {
-      return await Customer.findAll(); // Return all customers
+      const customers = await Customer.findAll();
+      return customers;
     } catch (error) {
       console.error("Error fetching customers: ", error.message);
       throw new Error("Error fetching customers from the database");
@@ -57,9 +80,16 @@ const CustomerService = {
   // Create a new customer
   createCustomer: async (customerData) => {
     try {
-      return await Customer.create(customerData); // Return the newly created customer
+      // Validate before creating customer
+      const customer = await Customer.create(customerData);
+      return customer;
     } catch (error) {
       console.error("Error creating customer: ", error.message);
+      if (error.name === "SequelizeValidationError") {
+        throw new Error(
+          "Validation error: " + error.errors.map((e) => e.message).join(", ")
+        );
+      }
       throw new Error("Error creating customer in the database");
     }
   },
@@ -69,10 +99,15 @@ const CustomerService = {
     try {
       const customer = await Customer.findByPk(id);
       if (!customer) throw new Error("Customer not found");
-      await customer.update(customerData); // Update customer fields
-      return customer; // Return the updated customer
+      await customer.update(customerData);
+      return customer;
     } catch (error) {
       console.error(`Error updating customer with ID ${id}: `, error.message);
+      if (error.name === "SequelizeValidationError") {
+        throw new Error(
+          "Validation error: " + error.errors.map((e) => e.message).join(", ")
+        );
+      }
       throw new Error("Error updating customer in the database");
     }
   },
@@ -83,8 +118,8 @@ const CustomerService = {
       const customer = await Customer.findByPk(id);
       if (!customer) throw new Error("Customer not found");
       customer.active_customer_status = false;
-      await customer.save(); // Save the updated status
-      return customer; // Return the updated customer
+      await customer.save();
+      return customer;
     } catch (error) {
       console.error(
         `Error deactivating customer with ID ${id}: `,

@@ -8,8 +8,8 @@ const {
 const validateCustomer = require("../middlewares/validateCustomer");
 const Customer = require("../models/Customer.model");
 
-// Centralized error handler function (for future use)
-const sendErrorResponse = (res, statusCode, message, logMessage) => {
+// Centralized error handler function
+const sendErrorResponse = (res, statusCode, message, logMessage = null) => {
   if (logMessage) {
     console.error(logMessage);
   }
@@ -22,8 +22,20 @@ const sendErrorResponse = (res, statusCode, message, logMessage) => {
 // POST endpoint for adding a customer
 router.post(
   "/api/add-customer",
-  validateCustomer, // Ensure this middleware is defined properly
-  customerController.addCustomer // Ensure this handler exists
+  validateCustomer, // Ensure this middleware validates properly
+  async (req, res) => {
+    try {
+      await customerController.addCustomer(req, res);
+    } catch (error) {
+      console.error("Error in add-customer route:", error);
+      return sendErrorResponse(
+        res,
+        500,
+        "Error adding customer. Please try again later.",
+        error.message
+      );
+    }
+  }
 );
 
 // Route to get all customers (public or authenticated access, no specific restriction)
@@ -35,12 +47,12 @@ router.get("/all-customers", authenticateToken, isAdmin, async (req, res) => {
     // Fetch all customers from the database
     const customers = await Customer.findAll();
 
-    if (customers.length === 0) {
-      return res.status(404).json({ message: "No customers found" });
+    if (!customers || customers.length === 0) {
+      return sendErrorResponse(res, 404, "No customers found");
     }
 
     // Return the customer data in JSON format
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       customers,
     });
