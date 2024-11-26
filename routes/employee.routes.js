@@ -30,6 +30,13 @@ router.get(
   employeeController.getAllEmployees // Controller method to retrieve all employees
 );
 
+router.get(
+  "/api/employee/:uuid",
+  authMiddleware.verifyToken, // Ensures the user is authenticated
+  authMiddleware.isAdmin, // Ensures the user has admin privileges
+  employeeController.getSingleEmployee
+);
+
 // Update Employee Details Route
 // This route updates employee details based on the employee ID.
 router.put(

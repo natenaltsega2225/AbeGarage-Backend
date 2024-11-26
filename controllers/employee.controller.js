@@ -122,6 +122,28 @@ async function getAllEmployees(req, res, next) {
     });
   }
 }
+
+//Create the get single employee controller
+async function getSingleEmployee(req, res) {
+  try {
+    const { uuid } = req.params; // Extract employee ID from the request parameters
+    const employee = await employeeService.getEmployeeById(uuid);
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+    res.status(200).json(employee);
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json({ message: "An error occurred", error: error.message });
+  }
+}
+
+
+
+
+
 //Create the update employee controllers
 async function updateEmployee(req, res) {
   
@@ -208,6 +230,7 @@ async function deleteEmployee(req, res) {
 module.exports = {
   registerEmployee,
   getAllEmployees,
+  getSingleEmployee,
   updateEmployee,
   deleteEmployee
 };

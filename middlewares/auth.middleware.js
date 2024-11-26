@@ -127,11 +127,9 @@ async function authenticateAdmin(req, res, next) {
       );
     }
 
-    const employeeRole = employee[0].company_role_id;
-    const adminRoleId = parseInt(process.env.ADMIN_ROLE_ID);
-
-    if (employeeRole === adminRoleId) {
-      return next(); // Admin, proceed to next handler
+    // Check if employee has admin role and it has value 3 it can get access to the page
+    if (employee[0].company_role_id === 3) {
+      return next(); // Proceed to the next middleware or controller
     } else {
       return sendErrorResponse(
         res,

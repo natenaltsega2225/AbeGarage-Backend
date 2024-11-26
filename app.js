@@ -1,12 +1,13 @@
 // Import required modules
 const express = require("express");
+//Import the dotenv module and call the config method
+require("dotenv").config();
+//Import the cors module
 const cors = require("cors");
-const dotenv = require("dotenv");
 const customerRoutes = require("./routes/customer.routes"); // Adjusted path to match the file
 const middleware=require("./middlewares/auth.middleware")
 const routes = require("./routes"); // If other routes are used, ensure they are correctly imported
 // Initialize dotenv to load environment variables
-dotenv.config();
 
 // Create the Express app
 const app = express();
