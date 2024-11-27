@@ -40,18 +40,7 @@ const addCustomer = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    // Log error with more context
     console.error("Error in addCustomer:", error);
-
-    // Handle specific error types
-    if (error.status === 409) {
-      return res.status(409).json({
-        success: false,
-        message: error.message,
-      });
-    }
-
-    // Generic internal server error response with more details
     res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -63,7 +52,7 @@ const addCustomer = async (req, res) => {
 // Controller to get all customers
 const getAllCustomers = async (req, res) => {
   try {
-    const customers = await customerService.getCustomers();
+    const customers = await customerService.getAllCustomers();
 
     // Handle the case where no customers are found
     if (!customers || customers.length === 0) {
@@ -79,10 +68,7 @@ const getAllCustomers = async (req, res) => {
       customers: customers,
     });
   } catch (error) {
-    // Log error for debugging
     console.error("Error in getAllCustomers:", error);
-
-    // Return a more descriptive error message
     res.status(500).json({
       success: false,
       message: "Failed to retrieve customers",
@@ -91,4 +77,54 @@ const getAllCustomers = async (req, res) => {
   }
 };
 
-module.exports = { addCustomer, getAllCustomers };
+// Controller to update customer information by hash
+const updateCustomer = async (req, res) => {
+  try {
+    const { hash } = req.params; // Customer hash from the URL
+    const { customer_phone_number, customer_first_name, customer_last_name } =
+      req.body;
+
+    // Validate hash
+    if (!hash) {
+      return res.status(400).json({
+        error: "Bad Request",
+        message: "The customer hash provided is invalid or missing.",
+      });
+    }
+
+    // Check if at least one field is provided for update
+    if (!customer_phone_number && !customer_first_name && !customer_last_name) {
+      return res.status(400).json({
+        error: "Bad Request",
+        message:
+          "At least one field (phone number, first name, or last name) is required to update.",
+      });
+    }
+
+    // Call service to update customer details
+    const updateResult = await customerService.updateCustomer(hash, {
+      customer_phone_number,
+      customer_first_name,
+      customer_last_name,
+    });
+
+    if (updateResult.affectedRows === 0) {
+      return res.status(404).json({
+        error: "Customer not found",
+        message: "The customer hash provided does not exist.",
+      });
+    }
+
+    res.status(200).json({
+      message: "Customer updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating customer:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
+      message: "An error occurred while updating customer data.",
+    });
+  }
+};
+
+module.exports = { addCustomer, updateCustomer, getAllCustomers };

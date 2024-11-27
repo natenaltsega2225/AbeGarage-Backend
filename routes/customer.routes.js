@@ -4,9 +4,9 @@ const customerController = require("../controllers/customer.controller");
 const {
   authenticateToken,
   isAdmin,
-} = require("../middlewares/auth.middleware");
+  verifyAdmin,
+} = require("../middlewares/auth.middleware"); // Assuming verifyAdmin is in the same file as authenticateToken and isAdmin
 const validateCustomer = require("../middlewares/validateCustomer");
-const Customer = require("../models/Customer.model");
 
 // Centralized error handler function
 const sendErrorResponse = (res, statusCode, message, logMessage = null) => {
@@ -22,49 +22,18 @@ const sendErrorResponse = (res, statusCode, message, logMessage = null) => {
 // POST endpoint for adding a customer
 router.post(
   "/api/add-customer",
-  validateCustomer, // Ensure this middleware validates properly
-  async (req, res) => {
-    try {
-      await customerController.addCustomer(req, res);
-    } catch (error) {
-      console.error("Error in add-customer route:", error);
-      return sendErrorResponse(
-        res,
-        500,
-        "Error adding customer. Please try again later.",
-        error.message
-      );
-    }
-  }
+  validateCustomer,
+  customerController.addCustomer
 );
 
-// Route to get all customers (public or authenticated access, no specific restriction)
-router.get("/", customerController.getAllCustomers);
+// Route to update customer information
+router.put("/api/update-customer/:hash", customerController.updateCustomer);
 
-// GET endpoint for fetching all customers (only accessible by authenticated admins)
-router.get("/all-customers", authenticateToken, isAdmin, async (req, res) => {
-  try {
-    // Fetch all customers from the database
-    const customers = await Customer.findAll();
-
-    if (!customers || customers.length === 0) {
-      return sendErrorResponse(res, 404, "No customers found");
-    }
-
-    // Return the customer data in JSON format
-    return res.status(200).json({
-      success: true,
-      customers,
-    });
-  } catch (error) {
-    console.error("Error fetching customers:", error);
-    return sendErrorResponse(
-      res,
-      500,
-      "Error fetching customers. Please try again later.",
-      error.message
-    );
-  }
-});
+// GET all customers (accessible only by admin)
+router.get(
+  "/api/all-customers",
+  verifyAdmin,
+  customerController.getAllCustomers
+);
 
 module.exports = router;
