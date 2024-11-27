@@ -1,35 +1,5 @@
-// const { CustomerIdentifier, CustomerInfo } = require("../models");
+const conn = require("../config/db.config"); // Import the connection pool
 const crypto = require("crypto"); // Import crypto for generating a hash
-const sequelize = require("../config/db.config"); // Assuming you have sequelize instance exported here
-
-// Helper function for validating customer data
-const validateCustomerData = (customerData) => {
-  const {
-    customer_email,
-    customer_phone_number,
-    customer_first_name,
-    customer_last_name,
-  } = customerData;
-
-  if (
-    !customer_email ||
-    !customer_phone_number ||
-    !customer_first_name ||
-    !customer_last_name
-  ) {
-    throw new Error(
-      "Missing required fields: email, phone number, first name, and last name are mandatory."
-    );
-  }
-};
-
-// Helper function for generating a unique customer hash
-const generateCustomerHash = (email, phoneNumber) => {
-  return crypto
-    .createHash("sha256")
-    .update(email + phoneNumber)
-    .digest("hex");
-};
 
 // Service function to add a new customer
 const addCustomer = async (customerData) => {
@@ -39,155 +9,238 @@ const addCustomer = async (customerData) => {
     customer_first_name,
     customer_last_name,
     active_customer_status,
-  } = customerData;
+  } = customerData; // Extract fields
 
-  // Step 1: Validate customer data
-  validateCustomerData(customerData);
+  // Check if the customer email or phone number already exists
+  const [existingCustomer] = await conn.query(
+    "SELECT * FROM customer_identifier WHERE customer_email = ? OR customer_phone_number = ?",
+    [customer_email, customer_phone_number]
+  );
 
-  const transaction = await sequelize.transaction();
+  if (existingCustomer.length > 0) {
+    throw {
+      status: 409,
+      message: "Email or Phone number already registered.",
+    }; // Return conflict error if email/phone exists
+  }
 
   try {
-    // Step 2: Check if the customer email or phone number already exists
-    const existingCustomer = await CustomerIdentifier.findOne({
-      where: {
-        [sequelize.Op.or]: [
-          { customer_email: customer_email },
-          { customer_phone_number: customer_phone_number },
-        ],
-      },
-    });
+    // Step 1: Generate customer_hash
+    const customerHash = crypto
+      .createHash("sha256")
+      .update(customer_email + customer_phone_number)
+      .digest("hex");
 
-    if (existingCustomer) {
-      throw new Error("Email or Phone number already registered.");
-    }
-
-    // Step 3: Generate a unique customer hash
-    const customerHash = generateCustomerHash(
-      customer_email,
-      customer_phone_number
-    );
-
-    // Step 4: Insert into customer_identifier table
-    const customerIdentifier = await CustomerIdentifier.create(
-      {
+    // Step 2: Insert into customer_identifier
+    const insertCustomerIdentifierQuery = `
+      INSERT INTO customer_identifier (customer_email, customer_phone_number, customer_hash) 
+      VALUES (?, ?, ?)
+    `;
+    const [customerIdentifierResult] = await conn.query(
+      insertCustomerIdentifierQuery,
+      [
         customer_email,
         customer_phone_number,
-        customer_hash: customerHash,
-      },
-      { transaction }
+        customerHash, // Store the generated hash
+      ]
     );
 
-    const customerId = customerIdentifier.id;
+    const customerId = customerIdentifierResult.insertId; // Get the generated customer_id
 
-    // Insert into customer_info table
-    await CustomerInfo.create(
-      {
-        customer_id: customerId,
-        customer_first_name,
-        customer_last_name,
-        active_customer_status,
-      },
-      { transaction }
-    );
+    // Step 3: Insert into customer_info (now with the correct customer_id)
+    const insertCustomerInfoQuery = `
+      INSERT INTO customer_info (customer_id, customer_first_name, customer_last_name, active_customer_status) 
+      VALUES (?, ?, ?, ?)
+    `;
+    const [customerInfoResult] = await conn.query(insertCustomerInfoQuery, [
+      customerId, // Pass the customer_id from the previous insert
+      customer_first_name,
+      customer_last_name,
+      active_customer_status, // This should be passed in the request data
+    ]);
 
-    // Step 5: Commit the transaction
-    await transaction.commit();
+    // Check if the insert was successful
+    if (customerInfoResult.affectedRows !== 1) {
+      console.error("Failed to insert into customer_info table");
+      return null;
+    }
 
-    // Return success response
-    return {
-      success: true,
-      message: "Customer created successfully.",
-      customerId,
-    };
+    // Return success message
+    return { customerId, message: "Customer created successfully." };
   } catch (error) {
-    // If any error occurs, rollback the transaction
-    await transaction.rollback();
-
-    console.error("Error in addCustomer:", error.message);
-    throw new Error(`Failed to add customer: ${error.message}`);
+    console.error("Error in addCustomer:", error);
+    throw error; // Re-throw the error for controller handling
   }
 };
 
-// Service to get all customers
+// Service function to get all customers
 const getAllCustomers = async () => {
   try {
-    const customers = await CustomerIdentifier.findAll({
-      include: [
-        {
-          model: CustomerInfo,
-          as: "info",
-          attributes: [
-            "customer_first_name",
-            "customer_last_name",
-            "active_customer_status",
-          ],
-        },
-      ],
-    });
+    const query = `
+         SELECT 
+            ci_info.customer_first_name,
+            ci_info.customer_last_name,
+            ci_info.active_customer_status,
+            cid.customer_id,
+            cid.customer_email,
+            cid.customer_phone_number,
+            cid.customer_added_date,
+            cid.customer_hash
+         FROM 
+            customer_info AS ci_info
+         JOIN 
+            customer_identifier AS cid
+         ON 
+            ci_info.customer_id = cid.customer_id
+      `;
 
-    if (customers.length === 0) {
-      return { success: false, message: "No customers found." };
-    }
-
-    return {
-      success: true,
-      customers,
-    };
+    const [customers] = await conn.query(query); // Execute the query
+    return customers; // Return the customers array
   } catch (error) {
-    console.error("Error fetching customers:", error.message);
-    throw new Error("Error fetching customer data. Please try again later.");
+    console.error("Error in getAllCustomers:", error); // Log the error
+    throw error; // Propagate the error
   }
 };
 
-// Helper function to retrieve customer_id by hash
+// Service function to search customers by term
+const searchCustomers = async (searchTerm) => {
+  try {
+    const query = `
+         SELECT 
+            ci_info.customer_first_name,
+            ci_info.customer_last_name,
+            ci_info.active_customer_status,
+            cid.customer_email,
+            cid.customer_phone_number
+         FROM 
+            customer_info AS ci_info
+         JOIN 
+            customer_identifier AS cid
+         ON 
+            ci_info.customer_id = cid.customer_id
+         WHERE 
+            ci_info.customer_first_name LIKE ? OR
+            ci_info.customer_last_name LIKE ? OR
+            cid.customer_email LIKE ? OR
+            cid.customer_phone_number LIKE ?
+      `;
+    const searchPattern = `%${searchTerm}%`; // Add % for SQL LIKE search
+    const [customers] = await conn.query(query, [
+      searchPattern,
+      searchPattern,
+      searchPattern,
+      searchPattern,
+    ]);
+    return customers;
+  } catch (error) {
+    console.error("Error in searchCustomers:", error);
+    throw error;
+  }
+};
+
+// Service function to get customer by ID
+const getCustomerById = async (customerId) => {
+  try {
+    const query = `
+      SELECT * 
+      FROM customer_info 
+      WHERE customer_id = ?
+    `;
+    const [customer] = await conn.query(query, [customerId]);
+    return customer.length > 0 ? customer[0] : null; // Return customer or null if not found
+  } catch (error) {
+    console.error("Error in getCustomerById:", error);
+    throw error;
+  }
+};
+
+//A service function to get single customer
+const getCustomerByHash = async (hash) => {
+  try {
+    const query = `
+            SELECT 
+                ci.customer_id,
+                ci.customer_email,
+                ci.customer_phone_number,
+                ci.customer_added_date,
+                ci.customer_hash,
+                info.customer_first_name,
+                info.customer_last_name,
+                info.active_customer_status
+            FROM customer_identifier AS ci
+            INNER JOIN customer_info AS info
+            ON ci.customer_id = info.customer_id
+            WHERE ci.customer_hash = ?
+        `;
+
+    const [rows] = await conn.query(query, [hash]);
+
+    // Return the customer if found, otherwise return null
+    return rows.length > 0 ? rows[0] : null;
+  } catch (error) {
+    console.error("Error in getCustomerByHash service:", error.message);
+    throw error;
+  }
+};
+
 const getCustomerId = async (hash) => {
   try {
-    const customer = await CustomerIdentifier.findOne({
-      where: { customer_hash: hash },
-    });
-
-    if (!customer) {
-      throw new Error("Customer not found.");
-    }
-
-    return customer.customer_id;
+    const query = `
+      SELECT customer_id 
+      FROM customer_identifier 
+      WHERE customer_hash = ?
+    `;
+    const [result] = await conn.execute(query, [hash]);
+    return result;
   } catch (error) {
     console.error("Error in getCustomerId:", error.message);
     throw new Error("Failed to fetch customer ID");
   }
 };
-
 // Update customer details by hash
 const updateCustomer = async (hash, updatedData) => {
   try {
     const errors = []; // Array to track any update failures.
 
     // Step 1: Retrieve the customer_id using the hash
-    const customerId = await getCustomerId(hash);
+    const result = await getCustomerId(hash);
+    if (!result || result.length === 0) {
+      return "not_found"; // Return if the customer does not exist.
+    }
+    const customer_id = result[0].customer_id;
 
     // Step 2: Update the customer_identifier table (if applicable)
     if (updatedData.customer_phone_number) {
-      const result = await CustomerIdentifier.update(
-        { customer_phone_number: updatedData.customer_phone_number },
-        { where: { customer_id: customerId } }
-      );
+      const queryIdentifier = `
+        UPDATE customer_identifier 
+        SET customer_phone_number = COALESCE(?, customer_phone_number)
+        WHERE customer_id = ?
+      `;
+      const [resultIdentifier] = await conn.execute(queryIdentifier, [
+        updatedData.customer_phone_number,
+        customer_id,
+      ]);
 
-      if (result[0] === 0) {
+      if (resultIdentifier.affectedRows === 0) {
         errors.push("Failed to update customer_identifier table");
       }
     }
 
     // Step 3: Update the customer_info table (first name, last name)
     if (updatedData.customer_first_name || updatedData.customer_last_name) {
-      const result = await CustomerInfo.update(
-        {
-          customer_first_name: updatedData.customer_first_name,
-          customer_last_name: updatedData.customer_last_name,
-        },
-        { where: { customer_id: customerId } }
-      );
+      const queryInfo = `
+        UPDATE customer_info 
+        SET customer_first_name = COALESCE(?, customer_first_name),
+            customer_last_name = COALESCE(?, customer_last_name)
+        WHERE customer_id = ?
+      `;
+      const [resultInfo] = await conn.execute(queryInfo, [
+        updatedData.customer_first_name,
+        updatedData.customer_last_name,
+        customer_id,
+      ]);
 
-      if (result[0] === 0) {
+      if (resultInfo.affectedRows === 0) {
         errors.push("Failed to update customer_info table");
       }
     }
@@ -204,4 +257,9 @@ const updateCustomer = async (hash, updatedData) => {
   }
 };
 
-module.exports = { addCustomer, updateCustomer, getAllCustomers };
+module.exports = {
+  addCustomer,
+  updateCustomer,
+  getCustomerByHash,
+  getAllCustomers,
+};

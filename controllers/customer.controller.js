@@ -1,89 +1,110 @@
-const customerService = require("../services/customer.service");
+const customerService = require("../services/customer.service"); // Import customer service
 
-// Controller function to handle adding a new customer
+// Controller to handle adding a customer
 const addCustomer = async (req, res) => {
   try {
-    const customerData = req.body;
-
-    // Validate the input customer data
-    if (!customerData.name || !customerData.email) {
-      return res.status(400).json({
-        success: false,
-        message: "Name and email are required",
-      });
-    }
-
-    // Simple email validation (can be improved with regex or a library like validator)
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(customerData.email)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email format",
-      });
-    }
-
-    // Call the service layer to add the customer to the database
-    const result = await customerService.addCustomer(customerData);
-
-    // If customer already exists (based on unique email for instance)
-    if (result && result.status === 409) {
-      return res.status(409).json({
-        success: false,
-        message: "Customer already exists with this email",
-      });
-    }
-
-    // Send success response
-    res.status(201).json({
-      success: true,
-      message: "Customer created successfully!",
-      data: result,
-    });
+    const customerData = req.body; // Get customer data from the request body
+    const result = await customerService.addCustomer(customerData); // Call the service to add the customer
+    res.status(201).json(result); // Send success response with customer info
   } catch (error) {
     console.error("Error in addCustomer:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    if (error.status) {
+      res.status(error.status).json({ message: error.message }); // Handle specific error status
+    } else {
+      res.status(500).json({ message: "Internal server error" }); // Generic server error
+    }
   }
 };
 
-// Controller to get all customers
+// Controller to handle getting all customers
 const getAllCustomers = async (req, res) => {
   try {
-    const customers = await customerService.getAllCustomers();
+    const customers = await customerService.getAllCustomers(); // Call the service to fetch all customers
+    if (customers.length === 0) {
+      return res.status(404).json({ message: "No customers found." }); // If no customers found
+    }
+    res.status(200).json(customers); // Send the list of customers
+  } catch (error) {
+    console.error("Error in getAllCustomers:", error);
+    res.status(500).json({ message: "Internal server error" }); // Handle errors
+  }
+};
 
-    // Handle the case where no customers are found
-    if (!customers || customers.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No customers found",
+// Controller to handle searching customers by search term
+const searchCustomers = async (req, res) => {
+  const { searchTerm } = req.query; // Get search term from query parameters
+  try {
+    if (!searchTerm) {
+      return res.status(400).json({ message: "Search term is required." });
+    }
+
+    const customers = await customerService.searchCustomers(searchTerm); // Call service to search customers
+    if (customers.length === 0) {
+      return res.status(404).json({ message: "No matching customers found." });
+    }
+    res.status(200).json(customers); // Send the search results
+  } catch (error) {
+    console.error("Error in searchCustomers:", error);
+    res.status(500).json({ message: "Internal server error" }); // Handle errors
+  }
+};
+
+// Controller to handle getting a customer by ID
+const getCustomerById = async (req, res) => {
+  const { id } = req.params; // Get the customer ID from the route parameter
+  try {
+    const customer = await customerService.getCustomerById(id); // Call the service to fetch the customer by ID
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found." }); // If customer not found
+    }
+    res.status(200).json(customer); // Send customer data
+  } catch (error) {
+    console.error("Error in getCustomerById:", error);
+    res.status(500).json({ message: "Internal server error" }); // Handle errors
+  }
+};
+
+//Controller function to handle getting all customers
+const getSingleCustomerByHash = async (req, res) => {
+  try {
+    const { hash } = req.params;
+
+    // Validate hash
+    if (!hash || typeof hash !== "string" || hash.trim().length === 0) {
+      return res.status(400).json({
+        error: "Bad Request",
+        message: "The customer hash provided is invalid or missing.",
       });
     }
 
-    res.status(200).json({
-      success: true,
-      limit: customers.length,
-      customers: customers,
-    });
+    // Fetch customer data
+    const customer = await customerService.getCustomerByHash(hash);
+
+    if (!customer) {
+      return res.status(404).json({
+        error: "Customer not found",
+        message: "The customer hash provided does not exist.",
+      });
+    }
+
+    // Return customer data
+    res.status(200).json(customer);
   } catch (error) {
-    console.error("Error in getAllCustomers:", error);
+    console.error("Error fetching customer:", error.message);
     res.status(500).json({
-      success: false,
-      message: "Failed to retrieve customers",
-      error: error.message,
+      error: "Internal Server Error",
+      message: "An error occurred while fetching customer data.",
     });
   }
 };
 
-// Controller to update customer information by hash
+//Update customer information by hash
+
 const updateCustomer = async (req, res) => {
   try {
     const { hash } = req.params; // Customer hash from the URL
     const { customer_phone_number, customer_first_name, customer_last_name } =
       req.body;
-
     // Validate hash
     if (!hash) {
       return res.status(400).json({
@@ -127,4 +148,9 @@ const updateCustomer = async (req, res) => {
   }
 };
 
-module.exports = { addCustomer, updateCustomer, getAllCustomers };
+module.exports = {
+  addCustomer,
+  updateCustomer,
+  getSingleCustomerByHash,
+  getAllCustomers,
+};

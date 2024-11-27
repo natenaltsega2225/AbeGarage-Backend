@@ -1,33 +1,28 @@
 // routes/employeeRoutes.js
 const express = require("express");
 const router = express.Router();
-
-// Import controller and middleware
 const employeeController = require("../controllers/employee.controller");
-const customerController = require("../controllers/customer.controller");
 const {
   validateEmployeeRegistration,
-  authMiddleware,
-} = require("../middlewares/auth.middleware");
+} = require("../middlewares/validationmiddleware");
+const authMiddleware = require("../middlewares/auth.middleware");
 
-// Routes for employee registration and management
-// Employee Registration Route
-// This route handles POST requests to register a new employee.
+// Use validation middleware in the registration route
+// Route Path: The path /employee is defined as a POST route, meaning it will handle employee registration requests that contain data (e.g., in JSON format).
+// Middleware (validateEmployeeRegistration): Runs first and validates the request data to ensure it meets requirements (e.g., required fields, correct formats). If validation fails, it returns an error response; if it succeeds, the request is passed on.
+// Controller (employeeController.registerEmployee): Executes the registration logic, including saving the new employee to the database. This method handles the main business logic after validation.
 router.post(
   "/api/admin/employee",
-  authMiddleware.verifyToken, // Middleware to verify authentication token
-  authMiddleware.isAdmin, // Middleware to ensure the user has admin privileges
-  validateEmployeeRegistration, // Middleware to validate the employee registration data
-  employeeController.registerEmployee // Controller method that handles employee registration logic
+  authMiddleware.verifyToken, // Ensures the user is authenticated
+  authMiddleware.isAdmin, // Ensures the user has admin privileges
+  validateEmployeeRegistration, // Validates the request data
+  employeeController.registerEmployee // Registers the employee if all checks pass
 );
-
-// Get All Employees Route
-// This route fetches all employees. Admin access is required.
 router.get(
   "/api/employees",
-  authMiddleware.verifyToken, // Middleware to verify authentication token
-  authMiddleware.isAdmin, // Middleware to ensure the user has admin privileges
-  employeeController.getAllEmployees // Controller method to retrieve all employees
+  authMiddleware.verifyToken, // Ensures the user is authenticated
+  authMiddleware.isAdmin, // Ensures the user has admin privileges
+  employeeController.getAllEmployees
 );
 
 router.get(
@@ -37,30 +32,18 @@ router.get(
   employeeController.getSingleEmployee
 );
 
-// Update Employee Details Route
-// This route updates employee details based on the employee ID.
+// PUT request to update employee details
 router.put(
   "/api/employee/:id",
-  [authMiddleware.verifyToken, authMiddleware.isAdmin], // Ensure authenticated admin user
-  employeeController.updateEmployee // Controller method to handle updating the employee
+  [authMiddleware.verifyToken, authMiddleware.isAdmin],
+  employeeController.updateEmployee
 );
-
-// Delete Employee Route
-// This route deletes an employee based on the employee ID.
+// Employee Deletion Route
 router.delete(
-  "/api/admin/employee/:id",
-  authMiddleware.verifyToken, // Middleware to verify authentication token
-  authMiddleware.isAdmin, // Middleware to ensure the user has admin privileges
-  employeeController.deleteEmployee // Controller method to handle employee deletion
-);
-
-// Add New Employee Route
-// If you have a separate route for adding employees (as mentioned), we consolidate it here.
-router.post(
-  "/api/employee/add",
-  authMiddleware.verifyToken, // Ensure the user is authenticated
-  authMiddleware.isAdmin, // Ensure the user has admin privileges
-  employeeController.addEmployee // Controller method for adding a new employee
+  "/api/admin/employee/:id", // Route to delete an employee
+  authMiddleware.verifyToken, // Ensures the user is authenticated
+  authMiddleware.isAdmin, // Ensures the user has admin privileges
+  employeeController.deleteEmployee // Deletes the employee if checks pass
 );
 
 module.exports = router;

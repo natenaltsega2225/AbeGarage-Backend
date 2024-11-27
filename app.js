@@ -1,46 +1,33 @@
-// Import required modules
+//Import the express module
 const express = require("express");
 //Import the dotenv module and call the config method
-require("dotenv").config();
+const dotenv = require("dotenv");
+dotenv.config();
 //Import the cors module
 const cors = require("cors");
-const customerRoutes = require("./routes/customer.routes"); // Adjusted path to match the file
-const middleware=require("./middlewares/auth.middleware")
-const routes = require("./routes"); // If other routes are used, ensure they are correctly imported
-// Initialize dotenv to load environment variables
+// Import the router module
+const router = require("./routes");
+//Create a variable to store the port number
+const PORT = process.env.PORT;
+const customerRoutes = require("./routes/customer.routes"); // Import the customer routes
 
-// Create the Express app
+// Create the web server
 const app = express();
-
-// Setup CORS and middleware
+// Use the cors middleware
 app.use(cors());
-app.use(express.json());
 
-// Register the customer routes under the '/api' path
-app.use("/api", customerRoutes);
-// Route setup: Apply the authenticateAdmin middleware for the '/api/all-customers' route
-app.use("/api/all-customers", middleware.authenticateAdmin, customerRoutes);
-// If you have other routes to integrate, use them here
+// Use the express.json middleware to parse JSON requests
+app.use(express.json());
+//Import the routes
+const routes = require("./routes");
+//Use the routes
 app.use(routes);
 
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res
-    .status(500)
-    .json({ error: "Internal Server Error", message: err.message });
-});
+app.use(customerRoutes); // Customer routes will already handle /api
 
-// Handle 404 errors for undefined routes
-app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
-});
-
-// Get the port from environment variable or fallback to 5000
-const PORT = process.env.PORT || 5000;
-
-// Start the server
+//Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`database connected`);
 });
-
 module.exports = app;

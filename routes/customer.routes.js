@@ -1,39 +1,41 @@
 const express = require("express");
 const router = express.Router();
 const customerController = require("../controllers/customer.controller");
-const {
-  authenticateToken,
-  isAdmin,
-  verifyAdmin,
-} = require("../middlewares/auth.middleware"); // Assuming verifyAdmin is in the same file as authenticateToken and isAdmin
-const validateCustomer = require("../middlewares/validateCustomer");
+const authMiddleware = require("../middlewares/auth.middleware"); // Import middleware
 
-// Centralized error handler function
-const sendErrorResponse = (res, statusCode, message, logMessage = null) => {
-  if (logMessage) {
-    console.error(logMessage);
-  }
-  return res.status(statusCode).json({
-    success: false,
-    message,
-  });
-};
-
-// POST endpoint for adding a customer
+// Route to add a new customer (requires token and admin privileges)
 router.post(
   "/api/add-customer",
-  validateCustomer,
+  authMiddleware.verifyToken, // Check for valid token
+  authMiddleware.isAdmin, // Ensure the user is an admin
   customerController.addCustomer
 );
 
-// Route to update customer information
-router.put("/api/update-customer/:hash", customerController.updateCustomer);
-
-// GET all customers (accessible only by admin)
+// Route to get all customers (requires token only)
 router.get(
-  "/api/all-customers",
-  verifyAdmin,
+  "/api/customers",
+  //authMiddleware.verifyToken, // Check for valid token
   customerController.getAllCustomers
 );
+
+// Route to search for customers by search term (requires token only)
+// router.get(
+//    "/api/customers/search",
+//    authMiddleware.verifyToken, // Check for valid token
+//    customerController.searchCustomers // Route for search
+// );
+
+// Route to get a customer by ID (requires token only)
+// router.get(
+//    "/api/customers/:id",
+//    authMiddleware.verifyToken, // Check for valid token
+//    customerController.getCustomerById
+// );
+// Route to get a single customer by hash
+router.get("/api/customer/:hash", customerController.getSingleCustomerByHash);
+// Route to update customer information
+
+// Route to update customer information
+router.put("/api/update-customer/:hash", customerController.updateCustomer);
 
 module.exports = router;
