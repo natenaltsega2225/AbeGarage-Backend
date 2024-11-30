@@ -3,6 +3,6 @@ const router = express.Router();
 const orderController = require("../controllers/order.controller");
 
 // Define the route to fetch all orders
-router.get("/orders", orderController.getAllOrders);
+router.get("/api/orders", orderController.getAllOrders);
 
 module.exports = router;
