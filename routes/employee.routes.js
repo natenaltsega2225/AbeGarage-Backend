@@ -13,8 +13,8 @@ const authMiddleware = require("../middlewares/auth.middleware");
 // Controller (employeeController.registerEmployee): Executes the registration logic, including saving the new employee to the database. This method handles the main business logic after validation.
 router.post(
   "/api/admin/employee",
-  authMiddleware.verifyToken, // Ensures the user is authenticated
-  authMiddleware.isAdmin, // Ensures the user has admin privileges
+  //authMiddleware.verifyToken, // Ensures the user is authenticated
+  //authMiddleware.isAdmin, // Ensures the user has admin privileges
   validateEmployeeRegistration, // Validates the request data
   employeeController.registerEmployee // Registers the employee if all checks pass
 );

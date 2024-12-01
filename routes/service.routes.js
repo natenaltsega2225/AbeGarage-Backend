@@ -1,14 +1,33 @@
-
 const express = require("express");
 const router = express.Router();
-//const { verifyToken, isAdmin } = require("../middlewares/auth.Middleware");
-const { getSingleService } = require("../controllers/service.controller.js");
+const authMiddleware = require("../middlewares/auth.middleware");
+const serviceController = require("../controllers/service.controller");
 
-// Route for getting a single service by ID
+// Admin and Manager route for adding service
+router.post(
+   "/api/service",
+   authMiddleware.verifyToken,
+   authMiddleware.isAdminOrManagerForService, // Combined check for Admin or Manager
+   serviceController.addService
+);
+
+// create a route to handel the get all services request
+router.get(
+  "/api/services",
+  // [verifyToken, isAdmin],
+  serviceController.getAllServices
+);
 router.get(
   "/api/service/:id", // URL parameter for service ID
  //[verifyToken], // Token validation middleware
-  getSingleService // Call the controller to fetch the service
+ serviceController.getSingleService // Call the controller to fetch the service
+);
+// Admin and Manager route for updating service
+router.put(
+   "/api/service/:id",
+   authMiddleware.verifyToken,
+   authMiddleware.isAdminOrManagerForService, // Combined check for Admin or Manager
+   serviceController.updateService
 );
 
 module.exports = router;
