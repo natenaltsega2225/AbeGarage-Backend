@@ -30,5 +30,10 @@ router.put(
    authMiddleware.isAdminOrManagerForService, // Combined check for Admin or Manager
    serviceController.updateService
 );
-
+router.delete(
+   "/api/service/:id",
+   // authMiddleware.verifyToken,
+   // authMiddleware.isAdminOrManagerForService, // Combined check for Admin or Manager
+   serviceController.deleteService
+);
 module.exports = router;

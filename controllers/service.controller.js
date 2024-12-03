@@ -114,9 +114,33 @@ const getSingleService = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+const deleteService = async (req, res) => {
+  const { id } = req.params; // Extract the service ID from the request parameter
+
+  try {
+    // Validate the ID
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ message: "Invalid service ID provided!" });
+    }
+
+    // Call the service layer to delete the service
+    const deleteResult = await serviceService.deleteServiceById(id);
+
+    if (!deleteResult) {
+      return res.status(404).json({ message: "Service not found!" });
+    }
+
+    return res.status(200).json({ message: "Service deleted successfully!" });
+  } catch (error) {
+    console.error("Error in deleteService:", error.message);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   addService,
   updateService,
   getAllServices,
   getSingleService,
+  deleteService, 
 };

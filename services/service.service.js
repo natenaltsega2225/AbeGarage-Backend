@@ -139,9 +139,29 @@ const getAllService = async () => {
    }
  };
  
+ const db = require("../config/db"); // Example: Replace with your database connection
+
+const deleteServiceById = async (id) => {
+  try {
+    // Query to check if the service exists
+    const [service] = await db.query("SELECT * FROM services WHERE id = ?", [id]);
+    if (!service) {
+      return null; // Service not found
+    }
+
+    // Query to delete the service
+    await db.query("DELETE FROM services WHERE id = ?", [id]);
+    return true; // Successfully deleted
+  } catch (error) {
+    console.error("Error in deleteServiceById:", error.message);
+    throw new Error(error.message);
+  }
+};
+
 module.exports = {
    addService,
    updateService,
    getAllService,
-   getServiceById
+   getServiceById,
+   deleteServiceById 
   };
