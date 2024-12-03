@@ -123,7 +123,6 @@ const getAllService = async () => {
      return error;
    }
  };
-
  const getServiceById = async (id) => {
    try {
      const query = "SELECT * FROM common_services WHERE service_id = ?";
@@ -139,6 +138,7 @@ const getAllService = async () => {
      return error;
    }
  };
+ 
 module.exports = {
    addService,
    updateService,

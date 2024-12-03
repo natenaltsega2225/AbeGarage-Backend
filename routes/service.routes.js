@@ -17,11 +17,12 @@ router.get(
   // [verifyToken, isAdmin],
   serviceController.getAllServices
 );
+// Route for getting a single service by ID
 router.get(
-  "/api/service/:id", // URL parameter for service ID
- //[verifyToken], // Token validation middleware
- serviceController.getSingleService // Call the controller to fetch the service
-);
+   "/api/service/:id", // URL parameter for service ID
+  //[verifyToken], // Token validation middleware
+  serviceController.getSingleService // Call the controller to fetch the service
+ );
 // Admin and Manager route for updating service
 router.put(
    "/api/service/:id",
