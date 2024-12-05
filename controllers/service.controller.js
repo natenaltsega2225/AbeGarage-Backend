@@ -94,7 +94,7 @@ const getAllServices = async (req, res) => {
 };
 const getSingleService = async (req, res) => {
   const { id } = req.params; // Extract the service ID from the request parameter
-
+  // console.log(req.params);
   try {
     if (!id || isNaN(id)) {
       return res.status(400).json({ message: "Invalid service ID provided!" });
@@ -114,9 +114,30 @@ const getSingleService = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+// controller to delete a service by ID
+const deleteService = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await serviceService.deleteService(id);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in deleteService:", error.message);
+    if (error.message === "Service not found") {
+      return res
+        .status(404)
+        .json({ error: "Not Found", message: "Service not found" });
+    }
+    res.status(500).json({
+      error: "Internal Server Error",
+      message: "An unexpected error occurred.",
+    });
+  }
+};
 module.exports = {
   addService,
   updateService,
   getAllServices,
   getSingleService,
+  deleteService,
 };
