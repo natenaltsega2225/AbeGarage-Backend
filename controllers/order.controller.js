@@ -3,6 +3,7 @@ const {
   createOrderr,
   getAllOrders,
   getsingleOrderr,
+  customerOrderss,
   updateOrderr,
 } = require("../services/order.service");
 
@@ -10,9 +11,9 @@ async function createOrder(req, res, next) {
   // console.log(req.body.service_completed.length);
 
   if (req.body.order_services.length < 1) {
-     return res.status(400).json({
-        error: "Please select at least one service!",
-     });
+    return res.status(400).json({
+      error: "Please select at least one service!",
+    });
   }
   try {
     const createdOrder = await createOrderr(req.body);
@@ -70,7 +71,26 @@ async function getsingleOrder(req, res, next) {
     });
   }
 }
+async function customerOrders(req, res, next) {
+  try {
+    const customerOrder = await customerOrderss(req.params.hash);
 
+    if (!customerOrder.length) {
+      return res.status(400).json({
+        error: "No Order Found!",
+      });
+    } else {
+      return res.status(200).json({
+        status: "Order Found!!",
+        customerOrder: customerOrder,
+      });
+    }
+  } catch (error) {
+    res.status(404).json({
+      error: "Something went wrong!",
+    });
+  }
+}
 // Update an order
 async function updateOrder(req, res) {
   try {
@@ -84,9 +104,9 @@ async function updateOrder(req, res) {
         .status(400)
         .json({ error: "Field 'service_completed' must be a non-empty array" });
     }
-    
+
     const result = await updateOrderr(orderData);
-    
+
     if (!result) {
       return res.status(400).json({ error: "Failed to update the order" });
     }
@@ -100,6 +120,7 @@ async function updateOrder(req, res) {
 }
 
 module.exports = {
+  customerOrders,
   createOrder,
   getsingleOrder,
   getAllOrderrs,
