@@ -8,7 +8,6 @@ const jwtSecret = process.env.JWT_SECRET;
 // Handle employee login
 async function logIn(req, res, next) {
   try {
-    console.log(req.body);
     const employeeData = req.body; //extracts the employee data from the request body
      // Validate that the password length is greater than 8 characters
      if (employeeData.employee_password.length < 6) {
