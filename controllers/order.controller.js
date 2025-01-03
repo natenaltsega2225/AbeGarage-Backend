@@ -92,6 +92,7 @@ async function customerOrders(req, res, next) {
   }
 }
 // Update an order
+
 async function updateOrder(req, res) {
   try {
     const orderData = req.body;

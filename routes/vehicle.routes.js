@@ -19,5 +19,17 @@ router.get(
   vehicleController.getSingleVehicle
 );
 
+// todo :  get single vehicle 
+router.get(
+  "/api/vehicle/:id",
+  vehicleController.getVehicleById
+);
+
+
+// route to update vehicle 
+router.put (
+  "/api/vehicle/:id",  // ':id' will capture the vehicle_id from the URL
+  vehicleController.updateVehicle
+)
 // export the router
 module.exports = router;
