@@ -75,7 +75,7 @@ async function createOrderr(order) {
 
     return true;
   } catch (error) {
-    console.log(error);
+    // console.log(error);
   }
 }
 //GET all orders
@@ -146,7 +146,7 @@ async function getsingleOrderr(order_hash) {
 
     return [{ ...rows[0], order_services: rows2 }];
   } catch (error) {
-    console.log(error);
+    // console.log(error);
   }
 }
 async function customerOrderss(order) {
@@ -180,7 +180,7 @@ async function customerOrderss(order) {
 
     return rows2;
   } catch (error) {
-    console.log(error);
+    // console.log(error);
   }
 }
 async function updateOrderr(order) {

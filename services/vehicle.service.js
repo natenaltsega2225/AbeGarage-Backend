@@ -37,7 +37,7 @@ async function addVehiclee(vehicle) {
     const [rows1] = await connection.query(query1, values);
     return rows1.insertId;
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     return error;
   }
 }

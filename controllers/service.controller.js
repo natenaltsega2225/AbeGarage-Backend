@@ -116,7 +116,6 @@ const getSingleService = async (req, res) => {
 };
 const deleteService = async (req, res) => {
 const { id } = req.params;
-console.log(id);
 try {
    const success = serviceService.deleteService(id);
    if (!success) {

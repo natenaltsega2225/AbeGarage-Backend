@@ -248,7 +248,7 @@ async function deleteEmployee(employeeId) {
     ]);
     return "success";
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     return error;
   }
 }

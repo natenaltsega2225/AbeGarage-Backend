@@ -4,13 +4,9 @@ const {
 } = require("../services/vehicle.service");
 
 async function addVehicle(req, res, next) {
-  console.log(req.body);
 
   try {
     const AddedVehicle = await addVehiclee(req.body);
-
-    // console.log(AddedVehicle.affectedRows)
-    console.log(AddedVehicle);
     if (!addVehiclee) {
       return res.status(400).json({
         error: "Failed to add vehicle",
@@ -23,7 +19,7 @@ async function addVehicle(req, res, next) {
       });
     }
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     return res.status(400).json({
       error: "Something went wrong!",
     });
@@ -48,7 +44,7 @@ async function getSingleVehicle(req, res, next) {
       });
     }
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     res.status(400).json({
       error: "Something went wrong!",
     });

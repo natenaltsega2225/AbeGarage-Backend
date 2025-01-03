@@ -15,7 +15,6 @@ const registerEmployee = async (req, res) => {
     active_employee,
     employee_role,
   } = req.body;
-  console.log(employee_role);
 
   // Type validation: Ensure that fields expected to be strings are strings
   if (
@@ -133,7 +132,7 @@ async function getSingleEmployee(req, res) {
     }
     res.status(200).json(employee);
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     res
       .status(500)
       .json({ message: "An error occurred", error: error.message });
