@@ -1,4 +1,4 @@
-const { addVehiclee, getSingleVehiclee,getVehicleeById, updateVehiclee } = require("../services/vehicle.service");
+const { addVehiclee, getCustomerVehicle,getVehicleeById, updateVehiclee } = require("../services/vehicle.service");
 
 async function addVehicle(req, res, next) {
 
@@ -26,7 +26,7 @@ async function addVehicle(req, res, next) {
 // A function to get a customer vehicle by customer hash
 async function getSingleVehicle(req, res, next) {
   try {
-    const SingleVehicle = await getSingleVehiclee(req.params);
+    const SingleVehicle = await getCustomerVehicle(req.params);
 
     // console.log(SingleVehicle)
 
@@ -50,10 +50,9 @@ async function getSingleVehicle(req, res, next) {
 
 // a function to get a vehicle by single by ID 
 async function getVehicleById(req, res, next) {
-  console.log(req.params);
-
+const {id} =req.params
   try {
-    const singleVehicle = await getVehicleeById(req.params);
+    const singleVehicle = await getVehicleeById(id);
 
     // console.log(SingleVehicle.length)
 

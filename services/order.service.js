@@ -196,7 +196,7 @@ async function updateOrderr(order) {
         newVariable[i].completed_value,
         newVariable[i].order_service_id,
       ];
-      // console.log(values);
+      console.log(values);
       const rows = await connection.query(query, values);
       // console.log(rows)
       afeectedRows = rows.affectedRows + afeectedRows;

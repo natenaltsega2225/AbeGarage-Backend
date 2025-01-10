@@ -43,7 +43,7 @@ async function addVehiclee(vehicle) {
 }
 
 // get the Customer single Vehiclee
-async function getSingleVehiclee(single) {
+async function getCustomerVehicle(single) {
   // console.log(single.customer_hash);
   // to get the customer Id
   const query = "SELECT * FROM customer_identifier WHERE customer_hash = ?";
@@ -67,5 +67,10 @@ async function getSingleVehiclee(single) {
   // console.log(rows1);
   return rows1;
 }
-
-module.exports = { addVehiclee, getSingleVehiclee };
+//Get single vehicle
+async function getVehicleeById(id){
+  const query = "SELECT * FROM customer_vehicle_info WHERE vehicle_id = ?";
+  const [rows] = await connection.query(query, [id]);
+  return rows
+}
+module.exports = { addVehiclee, getCustomerVehicle,getVehicleeById };
