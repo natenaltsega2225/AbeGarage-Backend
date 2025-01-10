@@ -52,7 +52,6 @@ async function getSingleVehicle(req, res, next) {
 async function getVehicleById(req, res, next) {
 const {id} =req.params
   try {
-     console.log(id);
     const singleVehicle = await getVehicleeById(id);
 
     // console.log(SingleVehicle.length)
