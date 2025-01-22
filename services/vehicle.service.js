@@ -73,4 +73,44 @@ async function getVehicleeById(id){
   const [rows] = await connection.query(query, [id]);
   return rows
 }
-module.exports = { addVehiclee, getCustomerVehicle,getVehicleeById };
+
+// Update customer vehicle information
+async function updateVehiclee(vehicle_id, vehicleData) {
+  try {
+    // First, check if the vehicle exists
+    const query = "SELECT * FROM customer_vehicle_info WHERE vehicle_id = ?";
+    const [rows] = await connection.query(query, [vehicle_id]);
+
+    if (rows.length === 0) {
+      return "Vehicle not found";  // Vehicle not found, return message
+    }
+
+    // Prepare the update query with the new data
+    const updateQuery =
+      "UPDATE customer_vehicle_info SET vehicle_year = ?, vehicle_make = ?, vehicle_model = ?, vehicle_type = ?, vehicle_mileage = ?, vehicle_tag = ?, vehicle_serial = ?, vehicle_color = ? WHERE vehicle_id = ?";
+    const values = [
+      vehicleData.vehicle_year,
+      vehicleData.vehicle_make,
+      vehicleData.vehicle_model,
+      vehicleData.vehicle_type,
+      vehicleData.vehicle_mileage,
+      vehicleData.vehicle_tag,
+      vehicleData.vehicle_serial,
+      vehicleData.vehicle_color,
+      vehicle_id
+    ];
+
+    // Execute the update query
+    const [updateResult] = await connection.query(updateQuery, values);
+    
+    if (updateResult.affectedRows === 0) {
+      return "Vehicle not found";  // No rows affected, vehicle not found
+    }
+
+    return "Vehicle updated successfully";  // Successfully updated vehicle
+  } catch (error) {
+    console.error("Error in updateVehiclee:", error.message);
+    return "Error updating vehicle";  // Generic error message
+  }
+}
+module.exports = { addVehiclee, getCustomerVehicle,getVehicleeById,updateVehiclee };
