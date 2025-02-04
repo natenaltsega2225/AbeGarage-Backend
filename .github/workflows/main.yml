@@ -1,0 +1,45 @@
+name: Deploy Backend  # Name of the workflow
+
+on:
+  # Runs the workflow only on the initial deployment when the workflow is first set up
+  push:
+    branches:
+      - main  
+
+  # Runs the workflow only when a pull request is successfully merged into main
+  pull_request:
+    branches:
+      - main  
+    types:
+      - closed  
+
+jobs:
+  deploy:
+    if: github.event_name == 'push' || (github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main')  
+    # Ensures the workflow runs for the first-time deployment and only on successful PR merges into main
+
+    runs-on: ubuntu-latest  
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3  
+
+      - name: Deploy to EC2 (SCP)
+        uses: appleboy/scp-action@v0.1.3  
+        with:
+          host: ${{ secrets.EC2_HOST }}  
+          username: ${{ secrets.EC2_USER }}  
+          key: ${{ secrets.EC2_KEY }}  
+          source: "./backend/*"  
+          target: "/var/www/abegarage2025.com/backend/"  
+
+      - name: Restart Backend (SSH)
+        uses: appleboy/ssh-action@master  
+        with:
+          host: ${{ secrets.EC2_HOST }}  
+          username: ${{ secrets.EC2_USER }}  
+          key: ${{ secrets.EC2_KEY }}  
+          script: |
+            cd /var/www/abegarage2025.com/backend/
+            npm install  
+            pm2 restart backend
