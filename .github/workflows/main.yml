@@ -48,4 +48,4 @@ jobs:
             # Navigate to the backend directory
             cd /var/www/abegarage2025.com/backend/
             npm install  # Ensure all dependencies are installed
-            pm2 restart app || pm2 start app.js --name app  # Restart if running, else start backend
+            pm2 restart backend || pm2 start app.js --name backend  # Restart if running, else start backend
