@@ -33,11 +33,7 @@ jobs:
           source: "."  # Copies everything from the repo root
           target: "/var/www/abegarage2025.com/backend/"  # The target directory on EC2
 
-      - name: Copy .env file from backup folder
-        run: |
-          # Copy the .env file from the backup to the backend directory
-          cp /var/www/abegarage2025.com/backend_backup/.env /var/www/abegarage2025.com/backend/
-
+     
       - name: Restart Backend (SSH)
         uses: appleboy/ssh-action@master  # Uses SSH to run commands on the EC2 instance
         with:
