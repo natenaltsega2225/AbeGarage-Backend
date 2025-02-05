@@ -1,12 +1,12 @@
 name: Deploy Backend  # Name of the workflow
 
 on:
-  # Runs the workflow only on the initial deployment when the workflow is first set up
+  # Runs the workflow on any push to the main branch, including the initial deployment
   push:
     branches:
       - main  
 
-  # Runs the workflow only when a pull request is successfully merged into main
+  # Runs the workflow when a pull request is successfully merged into the main branch
   pull_request:
     branches:
       - main  
@@ -15,31 +15,37 @@ on:
 
 jobs:
   deploy:
-    if: github.event_name == 'push' || (github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main')  
-    # Ensures the workflow runs for the first-time deployment and only on successful PR merges into main
+    # Ensures the workflow runs for both push to main and PR merge into main
+    if: github.event_name == 'push' || (github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main')
 
-    runs-on: ubuntu-latest  
+    runs-on: ubuntu-latest  # Specifies the job to run on an Ubuntu-based runner
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3  
+        uses: actions/checkout@v3  # Clones the repository into the runner for processing
 
       - name: Deploy to EC2 (SCP)
-        uses: appleboy/scp-action@v0.1.3  
+        uses: appleboy/scp-action@v0.1.3  # Uses SCP to securely copy backend files to EC2 instance
         with:
           host: ${{ secrets.EC2_HOST }}  
           username: ${{ secrets.EC2_USER }}  
           key: ${{ secrets.EC2_KEY }}  
-          source: "./backend/*"  
-          target: "/var/www/abegarage2025.com/backend/"  
+          source: "."  # Copies everything from the repo root
+          target: "/var/www/abegarage2025.com/backend/"  # The target directory on EC2
+
+      - name: Copy .env file from backup folder
+        run: |
+          # Copy the .env file from the backup to the backend directory
+          cp /var/www/abegarage2025.com/backend_backup/.env /var/www/abegarage2025.com/backend/
 
       - name: Restart Backend (SSH)
-        uses: appleboy/ssh-action@master  
+        uses: appleboy/ssh-action@master  # Uses SSH to run commands on the EC2 instance
         with:
           host: ${{ secrets.EC2_HOST }}  
           username: ${{ secrets.EC2_USER }}  
           key: ${{ secrets.EC2_KEY }}  
           script: |
+            # Navigate to the backend directory
             cd /var/www/abegarage2025.com/backend/
-            npm install  
-            pm2 restart backend
+            npm install  # Ensure all dependencies are installed
+            pm2 restart app || pm2 start app.js --name app  # Restart if running, else start backend
